@@ -639,7 +639,34 @@
     <div class="view-head">
       <div class="eyebrow">Setup</div>
       <h2>Categories &amp; data</h2>
-      <p>Categories are shared between credit charges and checking entries. Your data lives only in this browser.</p>
+      <p>Categories are shared between credit charges and checking entries.</p>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="panel-title">GitHub sync <span class="tag" id="gh-connected-tag"></span></div>
+      <p style="font-size:12.5px;color:var(--ink-soft);margin-top:0;">
+        Point this device at a GitHub repo to share data across people and devices. Everyone connects to the
+        <em>same</em> owner/repo/file/branch. Use a fine-grained personal access token scoped to only this repo
+        with read/write access to contents — not your main GitHub token.
+      </p>
+      <div class="row">
+        <div class="field"><label for="gh-owner">Owner / organization</label><input type="text" id="gh-owner" placeholder="e.g. venkat-dev"></div>
+        <div class="field"><label for="gh-repo">Repository</label><input type="text" id="gh-repo" placeholder="e.g. household-ledger"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="gh-path">File path in repo</label><input type="text" id="gh-path" placeholder="ledger-data.xml"></div>
+        <div class="field"><label for="gh-branch">Branch</label><input type="text" id="gh-branch" placeholder="main"></div>
+      </div>
+      <div class="field">
+        <label for="gh-token">Personal access token</label>
+        <input type="password" id="gh-token" placeholder="github_pat_...">
+      </div>
+      <div class="footer-actions" style="justify-content:flex-start;margin-top:6px;">
+        <button class="btn btn-debit" id="btn-gh-connect" type="button">Connect &amp; load</button>
+        <button class="btn btn-ghost" id="btn-gh-sync" type="button">Sync now</button>
+        <button class="btn btn-ghost" id="btn-gh-disconnect" type="button" style="color:var(--credit);border-color:var(--credit);">Disconnect</button>
+      </div>
+      <p id="gh-status" style="font-size:12px;color:var(--ink-soft);margin:10px 0 0 0;">Not connected — data is only stored in this browser.</p>
     </div>
 
     <div class="grid grid-2">
@@ -654,7 +681,7 @@
 
       <div class="card">
         <div class="panel-title">Backup &amp; reset</div>
-        <p style="font-size:13px;color:var(--ink-soft);margin-top:0;">Data is stored in this browser's local storage only. Export a backup before clearing browser data or switching devices.</p>
+        <p style="font-size:13px;color:var(--ink-soft);margin-top:0;">Export a JSON backup any time as an extra safety net, independent of GitHub.</p>
         <div class="footer-actions" style="justify-content:flex-start;margin-top:14px;">
           <button class="btn btn-ghost" id="btn-export-json">Export backup (JSON)</button>
           <label class="btn btn-ghost" style="position:relative;">
@@ -675,14 +702,9 @@
 (function(){
   "use strict";
 
-  /* ---------------- Storage ---------------- */
-  const KEYS = {
-    categories: 'ledger_categories',
-    cards: 'ledger_cards',
-    accounts: 'ledger_accounts',
-    expenses: 'ledger_expenses',
-    transactions: 'ledger_transactions'
-  };
+  /* ---------------- Storage: local cache + GitHub-backed XML source of truth ---------------- */
+  const CACHE_KEY = 'ledger_data_cache';   // local read-through cache of the shared state (JSON)
+  const GH_CONFIG_KEY = 'ledger_gh_config'; // per-device GitHub connection settings (not shared data)
 
   const EMI_CATEGORY = "Credit Card Payment (EMI)";
 
@@ -690,7 +712,7 @@
     "Entertainment","Subscriptions","Medical","Shopping","Transportation","Income","Transfer",
     EMI_CATEGORY,"Other"];
 
-  function load(key, fallback){
+  function loadJSON(key, fallback){
     try{
       const raw = localStorage.getItem(key);
       if(!raw) return fallback;
@@ -700,33 +722,36 @@
       return fallback;
     }
   }
-  function save(key, value){
+  function saveJSON(key, value){
     try{
       localStorage.setItem(key, JSON.stringify(value));
       return true;
     }catch(e){
       console.error('Failed to save', key, e);
-      showToast('Storage error — your browser may be blocking local storage or it is full.');
+      showToast('Local cache error — your browser may be blocking storage or it is full.');
       return false;
     }
   }
 
-  let state = {
-    categories: load(KEYS.categories, DEFAULT_CATEGORIES.slice()),
-    cards: load(KEYS.cards, []),
-    accounts: load(KEYS.accounts, []),
-    expenses: load(KEYS.expenses, []),
-    transactions: load(KEYS.transactions, [])
-  };
+  function defaultState(){
+    return { categories: DEFAULT_CATEGORIES.slice(), cards:[], accounts:[], expenses:[], transactions:[] };
+  }
 
-  function persist(part){
-    save(KEYS[part], state[part]);
+  let state = loadJSON(CACHE_KEY, defaultState());
+  let ghConfig = loadJSON(GH_CONFIG_KEY, {owner:'', repo:'', path:'ledger-data.xml', branch:'main', token:''});
+  let ghSha = null;          // last-known sha of the remote file, for conflict detection
+  let ghConnected = false;   // true once we've successfully loaded/validated the repo
+  let ghSyncing = false;     // guards overlapping save requests
+  let ghQueued = false;      // a save was requested while one was already in flight
+
+  function cacheStateLocally(){
+    saveJSON(CACHE_KEY, state);
   }
 
   // migration: make sure older saved data picks up the EMI category
   if(!state.categories.includes(EMI_CATEGORY)){
     state.categories.push(EMI_CATEGORY);
-    persist('categories');
+    cacheStateLocally();
   }
 
   function uid(){
@@ -748,11 +773,12 @@
     t.textContent = msg;
     t.classList.add('show');
     clearTimeout(showToast._h);
-    showToast._h = setTimeout(()=>t.classList.remove('show'), 2400);
+    showToast._h = setTimeout(()=>t.classList.remove('show'), 2600);
   }
 
-  /* ---------------- Seed demo data on very first run ---------------- */
+  /* ---------------- Seed demo data on very first run (local-only mode) ---------------- */
   function seedIfEmpty(){
+    if(ghConfig.owner) return; // never seed fake data into a shared GitHub file
     if(state.cards.length===0 && state.accounts.length===0 && state.expenses.length===0 && state.transactions.length===0){
       state.cards = [
         {id:uid(), name:'Everyday Visa', limit:5000, due:'', apr:''},
@@ -760,9 +786,207 @@
       state.accounts = [
         {id:uid(), name:'Primary Checking', start:2500}
       ];
-      persist('cards'); persist('accounts');
+      cacheStateLocally();
       showToast('Welcome — add your own cards, accounts, and entries any time.');
     }
+  }
+
+  /* ---------------- XML <-> state ---------------- */
+  function xmlEscape(s){
+    return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+  }
+  function tag(name, value){ return `<${name}>${xmlEscape(value)}</${name}>`; }
+
+  function stateToXML(s){
+    const cats = s.categories.map(c=>`    <category>${xmlEscape(c)}</category>`).join('\n');
+    const cards = s.cards.map(c=>`    <card id="${xmlEscape(c.id)}">
+      ${tag('name',c.name)}
+      ${tag('limit',c.limit)}
+      ${tag('due',c.due)}
+      ${tag('apr',c.apr)}
+    </card>`).join('\n');
+    const accounts = s.accounts.map(a=>`    <account id="${xmlEscape(a.id)}">
+      ${tag('name',a.name)}
+      ${tag('start',a.start)}
+    </account>`).join('\n');
+    const expenses = s.expenses.map(e=>`    <expense id="${xmlEscape(e.id)}">
+      ${tag('date',e.date)}
+      ${tag('amount',e.amount)}
+      ${tag('cardId',e.cardId)}
+      ${tag('category',e.category)}
+      ${tag('merchant',e.merchant)}
+      ${tag('notes',e.notes)}
+    </expense>`).join('\n');
+    const txns = s.transactions.map(t=>`    <transaction id="${xmlEscape(t.id)}">
+      ${tag('date',t.date)}
+      ${tag('amount',t.amount)}
+      ${tag('accountId',t.accountId)}
+      ${tag('type',t.type)}
+      ${tag('category',t.category)}
+      ${tag('desc',t.desc)}
+      ${tag('linkedCardId',t.linkedCardId||'')}
+    </transaction>`).join('\n');
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<ledger>
+  <categories>
+${cats}
+  </categories>
+  <cards>
+${cards}
+  </cards>
+  <accounts>
+${accounts}
+  </accounts>
+  <expenses>
+${expenses}
+  </expenses>
+  <transactions>
+${txns}
+  </transactions>
+</ledger>`;
+  }
+
+  function xmlText(el, name, fallback){
+    const node = el.getElementsByTagName(name)[0];
+    return node ? node.textContent : (fallback!==undefined ? fallback : '');
+  }
+
+  function xmlToState(xmlString){
+    const doc = new DOMParser().parseFromString(xmlString, 'application/xml');
+    if(doc.querySelector('parsererror')) throw new Error('Malformed XML in data file');
+    const out = defaultState();
+    const catNodes = doc.querySelectorAll('categories > category');
+    if(catNodes.length){
+      out.categories = Array.from(catNodes).map(n=>n.textContent);
+    }
+    out.cards = Array.from(doc.querySelectorAll('cards > card')).map(el=>({
+      id: el.getAttribute('id'), name: xmlText(el,'name'), limit: xmlText(el,'limit'),
+      due: xmlText(el,'due'), apr: xmlText(el,'apr')
+    }));
+    out.accounts = Array.from(doc.querySelectorAll('accounts > account')).map(el=>({
+      id: el.getAttribute('id'), name: xmlText(el,'name'), start: xmlText(el,'start')
+    }));
+    out.expenses = Array.from(doc.querySelectorAll('expenses > expense')).map(el=>({
+      id: el.getAttribute('id'), date: xmlText(el,'date'), amount: xmlText(el,'amount'),
+      cardId: xmlText(el,'cardId'), category: xmlText(el,'category'),
+      merchant: xmlText(el,'merchant'), notes: xmlText(el,'notes')
+    }));
+    out.transactions = Array.from(doc.querySelectorAll('transactions > transaction')).map(el=>({
+      id: el.getAttribute('id'), date: xmlText(el,'date'), amount: xmlText(el,'amount'),
+      accountId: xmlText(el,'accountId'), type: xmlText(el,'type'),
+      category: xmlText(el,'category'), desc: xmlText(el,'desc'),
+      linkedCardId: xmlText(el,'linkedCardId','')
+    }));
+    if(!out.categories.includes(EMI_CATEGORY)) out.categories.push(EMI_CATEGORY);
+    return out;
+  }
+
+  /* ---------------- GitHub sync ---------------- */
+  function b64EncodeUnicode(str){
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_,p1)=>String.fromCharCode('0x'+p1)));
+  }
+  function b64DecodeUnicode(str){
+    return decodeURIComponent(atob(str).split('').map(c=>'%'+('00'+c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+  }
+
+  function ghConfigured(){
+    return !!(ghConfig.owner && ghConfig.repo && ghConfig.path && ghConfig.branch && ghConfig.token);
+  }
+  function ghApiUrl(){
+    return `https://api.github.com/repos/${encodeURIComponent(ghConfig.owner)}/${encodeURIComponent(ghConfig.repo)}/contents/${ghConfig.path.split('/').map(encodeURIComponent).join('/')}`;
+  }
+  function ghHeaders(){
+    return {
+      'Authorization': `Bearer ${ghConfig.token}`,
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28'
+    };
+  }
+  function setSyncStatus(text, isError){
+    const el = document.getElementById('gh-status');
+    if(!el) return;
+    el.textContent = text;
+    el.style.color = isError ? 'var(--credit)' : 'var(--ink-soft)';
+  }
+
+  async function ghLoad(silent){
+    if(!ghConfigured()) return false;
+    try{
+      if(!silent) setSyncStatus('Loading latest data from GitHub…');
+      const res = await fetch(`${ghApiUrl()}?ref=${encodeURIComponent(ghConfig.branch)}&t=${Date.now()}`, { headers: ghHeaders() });
+      if(res.status===404){
+        // file doesn't exist yet — start fresh, first save will create it
+        ghSha = null;
+        ghConnected = true;
+        setSyncStatus('Connected — no data file yet, it will be created on your first save.');
+        return true;
+      }
+      if(!res.ok){
+        const body = await res.text().catch(()=> '');
+        throw new Error(`GitHub returned ${res.status}${body?': '+body.slice(0,200):''}`);
+      }
+      const json = await res.json();
+      const xml = b64DecodeUnicode(json.content.replace(/\n/g,''));
+      state = xmlToState(xml);
+      ghSha = json.sha;
+      ghConnected = true;
+      cacheStateLocally();
+      setSyncStatus('Connected to ' + ghConfig.owner + '/' + ghConfig.repo + ' · synced ' + new Date().toLocaleTimeString());
+      return true;
+    }catch(e){
+      console.error(e);
+      ghConnected = false;
+      setSyncStatus('Could not load from GitHub: ' + e.message, true);
+      showToast('GitHub load failed — using your last locally cached data.');
+      return false;
+    }
+  }
+
+  async function ghSaveNow(message){
+    if(!ghConfigured()){ return; }
+    if(ghSyncing){ ghQueued = true; return; }
+    ghSyncing = true;
+    try{
+      setSyncStatus('Saving to GitHub…');
+      const xml = stateToXML(state);
+      const body = {
+        message: message || 'Update ledger data',
+        content: b64EncodeUnicode(xml),
+        branch: ghConfig.branch
+      };
+      if(ghSha) body.sha = ghSha;
+      const res = await fetch(ghApiUrl(), { method:'PUT', headers:{...ghHeaders(),'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      if(res.status===409 || res.status===422){
+        // someone else saved in the meantime — pull their version so we don't overwrite it
+        setSyncStatus('Someone else saved changes — refreshing to the latest version…', true);
+        showToast('Data changed elsewhere — refreshed to the latest version. Please redo your last change if it\u2019s missing.');
+        await ghLoad(true);
+        renderAll();
+        return;
+      }
+      if(!res.ok){
+        const errBody = await res.text().catch(()=> '');
+        throw new Error(`GitHub returned ${res.status}${errBody?': '+errBody.slice(0,200):''}`);
+      }
+      const json = await res.json();
+      ghSha = json.content.sha;
+      ghConnected = true;
+      cacheStateLocally();
+      setSyncStatus('Connected to ' + ghConfig.owner + '/' + ghConfig.repo + ' · synced ' + new Date().toLocaleTimeString());
+    }catch(e){
+      console.error(e);
+      setSyncStatus('Save to GitHub failed: ' + e.message + ' — your change is kept locally, try Sync now.', true);
+      showToast('Could not save to GitHub. Your change is safe in this browser — try "Sync now".');
+    }finally{
+      ghSyncing = false;
+      if(ghQueued){ ghQueued = false; ghSaveNow(message); }
+    }
+  }
+
+  function commitChange(message){
+    cacheStateLocally();
+    if(ghConfigured()) ghSaveNow(message);
   }
 
   /* ---------------- Navigation ---------------- */
@@ -957,6 +1181,52 @@
     });
   }
 
+  /* ---------------- GitHub settings panel ---------------- */
+  function renderGhSettingsForm(){
+    document.getElementById('gh-owner').value = ghConfig.owner || '';
+    document.getElementById('gh-repo').value = ghConfig.repo || '';
+    document.getElementById('gh-path').value = ghConfig.path || 'ledger-data.xml';
+    document.getElementById('gh-branch').value = ghConfig.branch || 'main';
+    document.getElementById('gh-token').value = ghConfig.token || '';
+    document.getElementById('gh-connected-tag').textContent = ghConfigured() ? 'configured on this device' : 'not connected';
+  }
+
+  function readGhFormIntoConfig(){
+    ghConfig = {
+      owner: document.getElementById('gh-owner').value.trim(),
+      repo: document.getElementById('gh-repo').value.trim(),
+      path: document.getElementById('gh-path').value.trim() || 'ledger-data.xml',
+      branch: document.getElementById('gh-branch').value.trim() || 'main',
+      token: document.getElementById('gh-token').value.trim()
+    };
+    saveJSON(GH_CONFIG_KEY, ghConfig);
+  }
+
+  document.getElementById('btn-gh-connect').addEventListener('click', async ()=>{
+    readGhFormIntoConfig();
+    if(!ghConfigured()){ showToast('Fill in owner, repo, file path, branch, and token first.'); return; }
+    const ok = await ghLoad(false);
+    document.getElementById('gh-connected-tag').textContent = ok ? 'connected' : 'connection failed';
+    if(ok){ refreshAllSelects(); renderAll(); if(document.getElementById('reports').classList.contains('active')) renderReports(); showToast('Connected — loaded latest data from GitHub.'); }
+  });
+
+  document.getElementById('btn-gh-sync').addEventListener('click', async ()=>{
+    readGhFormIntoConfig();
+    if(!ghConfigured()){ showToast('Connect to GitHub first.'); return; }
+    const ok = await ghLoad(false);
+    if(ok){ refreshAllSelects(); renderAll(); if(document.getElementById('reports').classList.contains('active')) renderReports(); showToast('Synced with GitHub.'); }
+  });
+
+  document.getElementById('btn-gh-disconnect').addEventListener('click', ()=>{
+    if(!confirm('Disconnect this device from GitHub sync? Your data stays cached in this browser, but new changes will only save locally until you reconnect.')) return;
+    ghConfig = {owner:'', repo:'', path:'ledger-data.xml', branch:'main', token:''};
+    ghSha = null; ghConnected = false;
+    saveJSON(GH_CONFIG_KEY, ghConfig);
+    renderGhSettingsForm();
+    setSyncStatus('Not connected — data is only stored in this browser.');
+    showToast('Disconnected. Local changes will no longer sync to GitHub.');
+  });
+
   /* ---------------- Dashboard ---------------- */
   let chartDashTop=null, chartCredit=null, chartDebit=null, chartTrend=null, chartEmi=null, chartCheckingFlow=null;
 
@@ -989,7 +1259,8 @@
     const ctx = document.getElementById('chart-dash-top');
     if(chartDashTop) chartDashTop.destroy();
     if(sorted.length===0){
-      ctx.getContext('2d').clearRect(0,0,ctx.width,ctx.height);
+      const c2d = ctx.getContext && ctx.getContext('2d');
+      if(c2d) c2d.clearRect(0,0,ctx.width,ctx.height);
     } else {
       chartDashTop = new Chart(ctx, {
         type:'bar',
@@ -1317,7 +1588,7 @@
       notes: document.getElementById('exp-notes').value.trim()
     };
     state.expenses.push(entry);
-    persist('expenses');
+    commitChange('Add credit charge: ' + entry.merchant);
     ev.target.reset();
     document.getElementById('exp-date').value = todayStr();
     renderExpenseList(); renderInstruments();
@@ -1341,7 +1612,7 @@
       linkedCardId: isEmi ? document.getElementById('txn-linked-card').value : ''
     };
     state.transactions.push(entry);
-    persist('transactions');
+    commitChange('Add checking entry: ' + entry.desc);
     ev.target.reset();
     document.getElementById('txn-date').value = todayStr();
     toggleLinkedCardField();
@@ -1358,7 +1629,7 @@
       due: document.getElementById('card-due').value,
       apr: document.getElementById('card-apr').value
     });
-    persist('cards');
+    commitChange('Add card: ' + document.getElementById('card-name').value.trim());
     ev.target.reset();
     renderInstruments(); refreshAllSelects();
     showToast('Card added.');
@@ -1371,7 +1642,7 @@
       name: document.getElementById('acct-name').value.trim(),
       start: parseFloat(document.getElementById('acct-start').value)||0
     });
-    persist('accounts');
+    commitChange('Add account: ' + document.getElementById('acct-name').value.trim());
     ev.target.reset();
     renderInstruments(); refreshAllSelects();
     showToast('Account added.');
@@ -1387,7 +1658,7 @@
       return;
     }
     state.categories.push(val);
-    persist('categories');
+    commitChange('Add category: ' + val);
     input.value='';
     renderCategoryChips(); refreshAllSelects();
     showToast('Category added.');
@@ -1399,16 +1670,16 @@
     if(del){
       const id = del.dataset.id, kind = del.dataset.kind;
       if(kind==='expense'){
-        state.expenses = state.expenses.filter(e=>e.id!==id); persist('expenses'); renderExpenseList(); renderInstruments();
+        state.expenses = state.expenses.filter(e=>e.id!==id); commitChange('Delete credit charge'); renderExpenseList(); renderInstruments();
       } else if(kind==='transaction'){
-        state.transactions = state.transactions.filter(t=>t.id!==id); persist('transactions'); renderTransactionList(); renderInstruments();
+        state.transactions = state.transactions.filter(t=>t.id!==id); commitChange('Delete checking entry'); renderTransactionList(); renderInstruments();
       } else if(kind==='card'){
         if(confirm('Remove this card? Its logged charges will stay in your history but show as "—".')){
-          state.cards = state.cards.filter(c=>c.id!==id); persist('cards'); renderInstruments(); refreshAllSelects();
+          state.cards = state.cards.filter(c=>c.id!==id); commitChange('Remove card'); renderInstruments(); refreshAllSelects();
         }
       } else if(kind==='account'){
         if(confirm('Remove this account? Its logged entries will stay in your history but show as "—".')){
-          state.accounts = state.accounts.filter(a=>a.id!==id); persist('accounts'); renderInstruments(); refreshAllSelects();
+          state.accounts = state.accounts.filter(a=>a.id!==id); commitChange('Remove account'); renderInstruments(); refreshAllSelects();
         }
       }
       renderDashboard();
@@ -1420,7 +1691,7 @@
       const inUse = state.expenses.some(e=>e.category===cat) || state.transactions.some(t=>t.category===cat);
       if(inUse && !confirm(`"${cat}" is used by existing entries. Remove it from the category list anyway? Existing entries keep their category text.`)) return;
       state.categories = state.categories.filter(c=>c!==cat);
-      persist('categories');
+      commitChange('Remove category: ' + cat);
       renderCategoryChips(); refreshAllSelects();
     }
   });
@@ -1450,16 +1721,16 @@
         const parsed = JSON.parse(reader.result);
         const incoming = parsed.state || parsed;
         if(!incoming.categories || !incoming.cards || !incoming.accounts) throw new Error('Unrecognized file');
-        state = {
+        Object.assign(state, {
           categories: incoming.categories || DEFAULT_CATEGORIES.slice(),
           cards: incoming.cards || [],
           accounts: incoming.accounts || [],
           expenses: incoming.expenses || [],
           transactions: incoming.transactions || []
-        };
-        Object.keys(KEYS).forEach(persist);
+        });
+        commitChange('Import backup');
         refreshAllSelects(); renderAll();
-        showToast('Backup imported.');
+        showToast('Backup imported' + (ghConfigured() ? ' and synced to GitHub.' : '.'));
       }catch(e){
         showToast('That file could not be read as a Ledger backup.');
       }
@@ -1469,9 +1740,12 @@
   });
 
   document.getElementById('btn-clear-all').addEventListener('click', ()=>{
-    if(!confirm('This clears every card, account, charge, and entry from this browser. Export a backup first if you want to keep it. Continue?')) return;
-    state = { categories: DEFAULT_CATEGORIES.slice(), cards:[], accounts:[], expenses:[], transactions:[] };
-    Object.keys(KEYS).forEach(persist);
+    const warning = ghConfigured()
+      ? `This clears every card, account, charge, and entry — and because GitHub sync is on, it will push an EMPTY file to ${ghConfig.owner}/${ghConfig.repo}, wiping it for everyone. Export a backup first if you want to keep it. Continue?`
+      : 'This clears every card, account, charge, and entry from this browser. Export a backup first if you want to keep it. Continue?';
+    if(!confirm(warning)) return;
+    Object.assign(state, defaultState());
+    commitChange('Clear all data');
     refreshAllSelects(); renderAll();
     showToast('All data cleared.');
   });
@@ -1490,11 +1764,32 @@
     renderDashboard();
   }
 
-  seedIfEmpty();
-  refreshAllSelects();
-  document.getElementById('exp-date').value = todayStr();
-  document.getElementById('txn-date').value = todayStr();
-  renderAll();
+  async function init(){
+    seedIfEmpty();
+    renderGhSettingsForm();
+    refreshAllSelects();
+    document.getElementById('exp-date').value = todayStr();
+    document.getElementById('txn-date').value = todayStr();
+    renderAll();
+
+    if(ghConfigured()){
+      const ok = await ghLoad(true);
+      if(ok){ refreshAllSelects(); renderAll(); }
+    } else {
+      setSyncStatus('Not connected — data is only stored in this browser.');
+    }
+  }
+
+  // pull the latest shared data whenever the tab becomes visible again,
+  // so a change made on another device shows up without a manual reload
+  document.addEventListener('visibilitychange', async ()=>{
+    if(document.visibilityState==='visible' && ghConfigured() && !ghSyncing){
+      const ok = await ghLoad(true);
+      if(ok){ refreshAllSelects(); renderAll(); if(document.getElementById('reports').classList.contains('active')) renderReports(); }
+    }
+  });
+
+  init();
 
 })();
 </script>
