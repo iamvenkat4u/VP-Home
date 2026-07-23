@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ledger>
+  <categories>
+    <category>Groceries</category>
+    <category>Dining</category>
+    <category>Utilities</category>
+    <category>Rent/Mortgage</category>
+    <category>Travel</category>
+    <category>Entertainment</category>
+    <category>Subscriptions</category>
+    <category>Medical</category>
+    <category>Shopping</category>
+    <category>Transportation</category>
+    <category>Income</category>
+    <category>Transfer</category>
+    <category>Credit Card Payment (EMI)</category>
+    <category>Other</category>
+  </categories>
+  <cards>
+    <card id="mrxjkvi5pzc4wk">
+      <name>Everyday Visa</name>
+      <limit>5000</limit>
+      <due></due>
+      <apr></apr>
+    </card>
+    <card id="mrxjugou1rp8ct">
+      <name>Amex</name>
+      <limit>18000</limit>
+      <due>2026-07-10</due>
+      <apr></apr>
+    </card>
+  </cards>
+  <accounts>
+    <account id="mrxjkvi5u2dacx">
+      <name>Primary Checking</name>
+      <start>2500</start>
+    </account>
+  </accounts>
+  <expenses>
+
+  </expenses>
+  <transactions>
+
+  </transactions>
+</ledger>
