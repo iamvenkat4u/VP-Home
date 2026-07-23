@@ -17,12 +17,6 @@
     <category>Other</category>
   </categories>
   <cards>
-    <card id="mrxjkvi5pzc4wk">
-      <name>Everyday Visa</name>
-      <limit>5000</limit>
-      <due></due>
-      <apr></apr>
-    </card>
     <card id="mrxjugou1rp8ct">
       <name>Amex</name>
       <limit>18000</limit>
