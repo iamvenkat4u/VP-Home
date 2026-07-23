@@ -77,6 +77,10 @@
       <name>Bofa-Checking</name>
       <start>4142</start>
     </account>
+    <account id="mrxk7tnsc5zh1i">
+      <name>DCU-Checking</name>
+      <start>1005.56</start>
+    </account>
   </accounts>
   <expenses>
 
