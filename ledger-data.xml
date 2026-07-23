@@ -53,6 +53,12 @@
       <due></due>
       <apr></apr>
     </card>
+    <card id="mrxk1ov2bsmgcq">
+      <name>Chase-Amazon</name>
+      <limit>9100</limit>
+      <due></due>
+      <apr></apr>
+    </card>
   </cards>
   <accounts>
     <account id="mrxjkvi5u2dacx">
