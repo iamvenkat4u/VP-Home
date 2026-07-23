@@ -41,6 +41,12 @@
       <due></due>
       <apr></apr>
     </card>
+    <card id="mrxjzdd2uqc34l">
+      <name>CapitalOne</name>
+      <limit>2000</limit>
+      <due></due>
+      <apr></apr>
+    </card>
   </cards>
   <accounts>
     <account id="mrxjkvi5u2dacx">
