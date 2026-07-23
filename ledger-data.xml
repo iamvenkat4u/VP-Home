@@ -77,6 +77,10 @@
       <name>Primary Checking</name>
       <start>2500</start>
     </account>
+    <account id="mrxk6yzm83jsfp">
+      <name>Bofa-Checking</name>
+      <start>4142</start>
+    </account>
   </accounts>
   <expenses>
 
