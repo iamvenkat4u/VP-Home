@@ -65,6 +65,12 @@
       <due></due>
       <apr></apr>
     </card>
+    <card id="mrxk677jycb6ka">
+      <name>Discover</name>
+      <limit>6000</limit>
+      <due></due>
+      <apr></apr>
+    </card>
   </cards>
   <accounts>
     <account id="mrxjkvi5u2dacx">
