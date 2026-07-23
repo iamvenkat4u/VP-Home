@@ -47,6 +47,12 @@
       <due></due>
       <apr></apr>
     </card>
+    <card id="mrxk12jbaug7we">
+      <name>Chase-Freedom</name>
+      <limit>6400</limit>
+      <due></due>
+      <apr></apr>
+    </card>
   </cards>
   <accounts>
     <account id="mrxjkvi5u2dacx">
