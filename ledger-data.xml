@@ -35,6 +35,12 @@
       <due></due>
       <apr></apr>
     </card>
+    <card id="mrxjwpwps87hd6">
+      <name>City</name>
+      <limit>6000</limit>
+      <due></due>
+      <apr></apr>
+    </card>
   </cards>
   <accounts>
     <account id="mrxjkvi5u2dacx">
