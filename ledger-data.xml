@@ -29,6 +29,12 @@
       <due></due>
       <apr></apr>
     </card>
+    <card id="mrxjw32e833m7v">
+      <name>Bofa-3373</name>
+      <limit>2000</limit>
+      <due></due>
+      <apr></apr>
+    </card>
   </cards>
   <accounts>
     <account id="mrxjkvi5u2dacx">
