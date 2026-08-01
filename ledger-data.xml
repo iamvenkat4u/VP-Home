@@ -90,6 +90,14 @@
       <merchant>Balance transfer</merchant>
       <notes></notes>
     </expense>
+    <expense id="msae6k6fhjocfx">
+      <date>2026-08-01</date>
+      <amount>789.04</amount>
+      <cardId>mrxjwpwps87hd6</cardId>
+      <category>Credit Card Payment (EMI)</category>
+      <merchant>Opening balance</merchant>
+      <notes></notes>
+    </expense>
   </expenses>
   <transactions>
 
