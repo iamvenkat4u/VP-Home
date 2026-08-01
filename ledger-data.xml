@@ -99,6 +99,14 @@
       <merchant>OB</merchant>
       <notes></notes>
     </expense>
+    <expense id="msaep3x3hyp3gb">
+      <date>2026-08-01</date>
+      <amount>217.04</amount>
+      <cardId>mrxjugou1rp8ct</cardId>
+      <category>Opening balance</category>
+      <merchant>OB</merchant>
+      <notes></notes>
+    </expense>
   </expenses>
   <transactions>
 
