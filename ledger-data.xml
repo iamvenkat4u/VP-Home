@@ -132,6 +132,14 @@
       <merchant>Mobile</merchant>
       <notes></notes>
     </expense>
+    <expense id="msb0mvghjxqxnp">
+      <date>2026-08-01</date>
+      <amount>10.59</amount>
+      <cardId>mrxjugou1rp8ct</cardId>
+      <category>Other</category>
+      <merchant>Drink HOT</merchant>
+      <notes></notes>
+    </expense>
   </expenses>
   <transactions>
     <transaction id="msaez4qu4htsf5">
