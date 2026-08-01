@@ -75,7 +75,10 @@
     </card>
   </cards>
   <accounts>
-
+    <account id="msadzt3n8jan99">
+      <name>BofA-Checking</name>
+      <start>6329.76</start>
+    </account>
   </accounts>
   <expenses>
 
