@@ -125,6 +125,14 @@
     </expense>
   </expenses>
   <transactions>
-
+    <transaction id="msaez4qu4htsf5">
+      <date>2026-08-01</date>
+      <amount>2109.29</amount>
+      <accountId>msadzt3n8jan99</accountId>
+      <type>withdrawal</type>
+      <category>Rent/Mortgage</category>
+      <desc>Rent</desc>
+      <linkedCardId></linkedCardId>
+    </transaction>
   </transactions>
 </ledger>
