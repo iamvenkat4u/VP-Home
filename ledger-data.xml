@@ -106,6 +106,14 @@
       <merchant>OB</merchant>
       <notes></notes>
     </expense>
+    <expense id="msaeaux4x7ja4w">
+      <date>2026-08-01</date>
+      <amount>467.87</amount>
+      <cardId>mrxk677jycb6ka</cardId>
+      <category>Credit Card Payment (EMI)</category>
+      <merchant>OB</merchant>
+      <notes></notes>
+    </expense>
   </expenses>
   <transactions>
 
