@@ -90,14 +90,6 @@
       <merchant>Balance transfer</merchant>
       <notes></notes>
     </expense>
-    <expense id="msaed9l0uo11qo">
-      <date>2026-08-01</date>
-      <amount>241.63</amount>
-      <cardId>mrxk12jbaug7we</cardId>
-      <category>Credit Card Payment (EMI)</category>
-      <merchant>OB</merchant>
-      <notes></notes>
-    </expense>
     <expense id="msaedvwm73genm">
       <date>2026-08-01</date>
       <amount>426.57</amount>
