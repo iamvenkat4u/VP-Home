@@ -82,7 +82,14 @@
     </account>
   </accounts>
   <expenses>
-
+    <expense id="msae2izauicbdd">
+      <date>2026-08-01</date>
+      <amount>26000</amount>
+      <cardId>mrxjv1nb2sm2fo</cardId>
+      <category>Loan</category>
+      <merchant>Balance transfer</merchant>
+      <notes></notes>
+    </expense>
   </expenses>
   <transactions>
 
