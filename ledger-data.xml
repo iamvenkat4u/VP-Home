@@ -140,6 +140,14 @@
       <merchant>Drink HOT</merchant>
       <notes></notes>
     </expense>
+    <expense id="msb7so4g7wj4lh">
+      <date>2026-08-01</date>
+      <amount>25.65</amount>
+      <cardId>mrxk677jycb6ka</cardId>
+      <category>Groceries</category>
+      <merchant>Publix</merchant>
+      <notes></notes>
+    </expense>
   </expenses>
   <transactions>
     <transaction id="msaez4qu4htsf5">
