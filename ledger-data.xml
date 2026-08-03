@@ -203,5 +203,14 @@
       <desc>Monthly EMI</desc>
       <linkedCardId>mrxjwpwps87hd6</linkedCardId>
     </transaction>
+    <transaction id="msdmzb2y0257rr">
+      <date>2026-08-03</date>
+      <amount>225</amount>
+      <accountId>msadzt3n8jan99</accountId>
+      <type>withdrawal</type>
+      <category>KidsClass</category>
+      <desc>PianoClass</desc>
+      <linkedCardId></linkedCardId>
+    </transaction>
   </transactions>
 </ledger>
