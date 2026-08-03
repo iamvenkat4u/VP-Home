@@ -193,5 +193,14 @@
       <desc>ATT- May and Jun</desc>
       <linkedCardId></linkedCardId>
     </transaction>
+    <transaction id="msdmw4m6r4cp7q">
+      <date>2026-08-03</date>
+      <amount>279.51</amount>
+      <accountId>msadzt3n8jan99</accountId>
+      <type>withdrawal</type>
+      <category>Credit Card Payment (EMI)</category>
+      <desc>Monthly EMI</desc>
+      <linkedCardId>mrxjwpwps87hd6</linkedCardId>
+    </transaction>
   </transactions>
 </ledger>
