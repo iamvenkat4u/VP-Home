@@ -165,14 +165,6 @@
       <merchant>Target/ Balaji gift</merchant>
       <notes></notes>
     </expense>
-    <expense id="msddtl4u841fae">
-      <date>2026-08-02</date>
-      <amount>8.35</amount>
-      <cardId>mrxjugou1rp8ct</cardId>
-      <category>Food</category>
-      <merchant>MCafe</merchant>
-      <notes>Cake</notes>
-    </expense>
   </expenses>
   <transactions>
     <transaction id="msaez4qu4htsf5">
