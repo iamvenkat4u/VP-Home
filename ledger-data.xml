@@ -228,5 +228,14 @@
       <desc>PianoClass</desc>
       <linkedCardId></linkedCardId>
     </transaction>
+    <transaction id="msf9rsnzbkkvyi">
+      <date>2026-08-02</date>
+      <amount>128.88</amount>
+      <accountId>msadzt3n8jan99</accountId>
+      <type>withdrawal</type>
+      <category>Credit Card Payment (EMI)</category>
+      <desc>EMI</desc>
+      <linkedCardId>mrxk1ov2bsmgcq</linkedCardId>
+    </transaction>
   </transactions>
 </ledger>
