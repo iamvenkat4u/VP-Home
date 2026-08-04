@@ -126,14 +126,6 @@
       <merchant>OB</merchant>
       <notes></notes>
     </expense>
-    <expense id="msb0m0qpboo3t5">
-      <date>2026-08-01</date>
-      <amount>97.95</amount>
-      <cardId>mrxjugou1rp8ct</cardId>
-      <category>Mobile</category>
-      <merchant>Mobile</merchant>
-      <notes></notes>
-    </expense>
     <expense id="msb0mvghjxqxnp">
       <date>2026-08-01</date>
       <amount>10.59</amount>
