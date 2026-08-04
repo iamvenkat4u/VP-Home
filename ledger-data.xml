@@ -237,5 +237,14 @@
       <desc>EMI</desc>
       <linkedCardId>mrxk1ov2bsmgcq</linkedCardId>
     </transaction>
+    <transaction id="msf9upj26z8btz">
+      <date>2026-08-04</date>
+      <amount>49.99</amount>
+      <accountId>msadzt3n8jan99</accountId>
+      <type>withdrawal</type>
+      <category>Utilities</category>
+      <desc>Internet Verizon Home</desc>
+      <linkedCardId></linkedCardId>
+    </transaction>
   </transactions>
 </ledger>
