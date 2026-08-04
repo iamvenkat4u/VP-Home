@@ -182,6 +182,14 @@
       <merchant>Desi bytes</merchant>
       <notes></notes>
     </expense>
+    <expense id="msf9qbyrqgk9ym">
+      <date>2026-08-04</date>
+      <amount>21.19</amount>
+      <cardId>mrxk1ov2bsmgcq</cardId>
+      <category>Shopping</category>
+      <merchant>Amazon</merchant>
+      <notes>Pepper Grinder</notes>
+    </expense>
   </expenses>
   <transactions>
     <transaction id="msaez4qu4htsf5">
